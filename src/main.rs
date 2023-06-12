@@ -16,9 +16,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let headers = csv_reader.headers()?.clone();
     let relevant_headers = ["Project", "Issue", "Summary", "Time spent", "Started"];
 
-    let relevant_records = csv_reader.records().map(|record| {
+    let records = csv_reader
+        .into_records()
+        .filter_map(|record| record.ok())
+        .collect::<Vec<_>>();
+
+    let relevant_records = records.iter().map(|record| {
         record
-            .unwrap()
             .into_iter()
             .enumerate()
             .filter_map(|(column_index, column)| {
@@ -28,14 +32,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                     None
                 }
             })
-            .map(|column| column.to_owned())
             .collect::<Vec<_>>()
     });
 
     for record in relevant_records {
-        // for column in record {
-        println!("{:?}", record);
-        // }
+        let date_column = &record[3];
+
+        let day = date_column.split(",").collect::<Vec<_>>();
+        println!("{:?}", day);
     }
 
     Ok(())
