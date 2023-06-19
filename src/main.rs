@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use clap::Parser;
 use csv::Reader;
+use itertools::Itertools;
 use std::error::Error;
 use std::path::PathBuf;
 
@@ -32,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .enumerate()
                 .filter_map(|(column_index, column)| {
                     if relevant_headers.contains(&headers.get(column_index)?) {
-                        Some(column)
+                        Some(String::from(column))
                     } else {
                         None
                     }
@@ -62,15 +63,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .unwrap()
                 .to_string();
 
-            println!("{:?}", date);
-
-            row[3] = Box::leak(date.into_boxed_str());
+            row[3] = date;
             row
         })
+        .group_by(|row| row[3].clone())
+        .into_iter()
+        .map(|(_, group)| group.into_iter().collect::<Vec<_>>())
+        .map(|groups| {}) // TODO: process groups
         .collect::<Vec<_>>();
 
     for record in relevant_records {
-        println!("{:?}", record);
+        println!("Group: {:?}", record);
     }
 
     Ok(())
