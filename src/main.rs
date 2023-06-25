@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use clap::Parser;
 use csv::Reader;
+use humantime::parse_duration;
 use itertools::Itertools;
 use std::error::Error;
 use std::path::PathBuf;
@@ -69,7 +70,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         .group_by(|row| row[3].clone())
         .into_iter()
         .map(|(_, group)| group.into_iter().collect::<Vec<_>>())
-        .map(|groups| {}) // TODO: process groups
+        .map(|groups| {
+            groups
+                .into_iter()
+                .map(|mut row| {
+                    let duration = parse_duration(&row[4]).unwrap().as_secs();
+                    let duration = duration.to_string();
+                    row[4] = duration;
+                    row
+                })
+                .collect::<Vec<_>>()
+        }) // TODO: process groups
         .collect::<Vec<_>>();
 
     for record in relevant_records {
