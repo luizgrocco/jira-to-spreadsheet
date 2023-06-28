@@ -79,12 +79,35 @@ fn main() -> Result<(), Box<dyn Error>> {
                     row[4] = duration;
                     row
                 })
+                .group_by(|row| row[1].clone())
+                .into_iter()
+                .map(|(_, grouped_row)| {
+                    grouped_row
+                        .into_iter()
+                        .fold(None, |acc: Option<Vec<String>>, row| {
+                            return match acc {
+                                Some(mut acc) => {
+                                    let current_hours = acc[4].parse::<u32>().unwrap();
+                                    let hours = row[4].parse::<u32>().unwrap();
+                                    let hours_total = current_hours + hours;
+                                    let stringified_hours = hours_total.to_string();
+                                    acc[4] = stringified_hours;
+                                    Some(acc)
+                                }
+                                None => Some(row),
+                            };
+                        })
+                })
+                .map(|row| row.unwrap())
                 .collect::<Vec<_>>()
         }) // TODO: process groups
         .collect::<Vec<_>>();
 
     for record in relevant_records {
-        println!("Group: {:?}", record);
+        println!("");
+        for column in record {
+            println!("{:?}", column);
+        }
     }
 
     Ok(())
