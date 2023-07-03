@@ -1,7 +1,6 @@
 use chrono::NaiveDate;
 use clap::Parser;
 use csv::Reader;
-use humantime::parse_duration;
 use itertools::Itertools;
 use std::error::Error;
 use std::path::PathBuf;
@@ -17,14 +16,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut csv_reader = Reader::from_path(&args.path)?;
 
     let headers = csv_reader.headers()?.clone();
-    let relevant_headers = ["Project", "Issue", "Summary", "Time spent", "Started"];
+    let relevant_headers = [
+        "Project Name",
+        "Ticket No",
+        "Summary",
+        "Hr. Spent",
+        "Log Date & Time",
+    ];
 
-    let mut records = csv_reader
+    let records = csv_reader
         .into_records()
         .filter_map(|record| record.ok())
         .collect::<Vec<_>>();
-
-    let total = records.pop().unwrap();
 
     let relevant_records = records
         .iter()
@@ -42,72 +45,62 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .collect::<Vec<_>>()
         })
         .map(|mut row| {
-            let date_column = &row[3];
+            let date_time_column = &row[3];
+            let date_column = date_time_column.split(" ").collect::<Vec<_>>()[0].to_owned();
 
-            let date_arr = date_column.split(",").collect::<Vec<_>>();
-
-            let month_day = date_arr[0];
-            let year = date_arr[1];
-
-            let month_day = month_day.split(" ").collect::<Vec<_>>();
-
-            let month = month_day[0];
-            let padded_day = if month_day[1].len() == 1 {
-                format!("0{}", month_day[1])
-            } else {
-                month_day[1].to_owned()
-            };
-
-            let stringified_date = format!("{}-{}-{}", month, padded_day, year);
-
-            let date = NaiveDate::parse_from_str(&stringified_date, "%B-%d- %Y")
-                .unwrap()
-                .to_string();
-
-            row[3] = date;
+            row[3] = date_column;
             row
+        })
+        .sorted_by(|record_a, record_b| {
+            let date_record_a = NaiveDate::parse_from_str(&record_a[3], "%d-%b-%Y")
+                .expect("Invalid date encountered");
+            let date_record_b = NaiveDate::parse_from_str(&record_b[3], "%d-%b-%Y")
+                .expect("Invalid date encountered");
+
+            date_record_a.cmp(&date_record_b)
         })
         .group_by(|row| row[3].clone())
         .into_iter()
         .map(|(_, group)| group.into_iter().collect::<Vec<_>>())
-        .map(|groups| {
-            groups
-                .into_iter()
-                .map(|mut row| {
-                    let duration = parse_duration(&row[4]).unwrap().as_secs();
-                    let duration = duration.to_string();
-                    row[4] = duration;
-                    row
-                })
+        .map(|row| {
+            row.into_iter()
                 .group_by(|row| row[1].clone())
                 .into_iter()
-                .map(|(_, grouped_row)| {
-                    grouped_row
+                .map(|(_, group)| {
+                    group
                         .into_iter()
-                        .fold(None, |acc: Option<Vec<String>>, row| {
-                            return match acc {
-                                Some(mut acc) => {
-                                    let current_hours = acc[4].parse::<u32>().unwrap();
-                                    let hours = row[4].parse::<u32>().unwrap();
-                                    let hours_total = current_hours + hours;
-                                    let stringified_hours = hours_total.to_string();
-                                    acc[4] = stringified_hours;
-                                    Some(acc)
+                        .fold(Vec::<Vec<String>>::new(), |mut acc, inner_vec| {
+                            if let Some(last) = acc.last_mut() {
+                                // Parse the last field as a float
+                                if let Ok(last_value) = last[4].parse::<f32>() {
+                                    // Add the parsed value to the sum
+                                    if let Ok(new_value) = inner_vec[4].parse::<f32>() {
+                                        last[4] = (last_value + new_value).to_string();
+                                    }
                                 }
-                                None => Some(row),
-                            };
+                            }
+
+                            // If the accumulator is empty or the last field couldn't be parsed, add the inner_vec as is
+                            if acc.is_empty() || acc.last().unwrap()[4] == inner_vec[4] {
+                                acc.push(inner_vec);
+                            }
+
+                            acc
                         })
                 })
-                .map(|row| row.unwrap())
+                .into_iter()
+                .flatten()
                 .collect::<Vec<_>>()
-        }) // TODO: process groups
+        })
         .collect::<Vec<_>>();
 
     for record in relevant_records {
-        println!("");
-        for column in record {
-            println!("{:?}", column);
-        }
+        println!();
+        println!("Record");
+        println!("{:?}", record)
+        // for column in record {
+        //     println!("{:?}", column);
+        // }
     }
 
     Ok(())
