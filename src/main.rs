@@ -129,9 +129,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     for record in relevant_records {
         println!();
         println!("{:?}", record)
-        // for column in record {
-        //     println!("{:?}", column);
-        // }
     }
 
     Ok(())
