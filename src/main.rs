@@ -90,13 +90,44 @@ fn main() -> Result<(), Box<dyn Error>> {
                 })
                 .into_iter()
                 .flatten()
-                .collect::<Vec<_>>()
+                .map(|row| {
+                    let mut new_row = vec![];
+                    new_row.push(row[3].clone());
+                    let formatted_task = format!("{}: [{}] {}", row[0], row[1], row[2]);
+                    new_row.push(formatted_task);
+                    new_row.push(row[4].clone());
+                    new_row
+                })
+                .fold(Vec::<String>::new(), |mut acc, row| {
+                    println!("inner print");
+                    println!("{:?}", row);
+                    println!();
+
+                    // A similar pattern to this needs to be used here
+                    // if let Some(last) = acc.last_mut() {
+                    //     // Parse the last field as a float
+                    //     if let Ok(last_value) = last[4].parse::<f32>() {
+                    //         // Add the parsed value to the sum
+                    //         if let Ok(new_value) = inner_vec[4].parse::<f32>() {
+                    //             last[4] = (last_value + new_value).to_string();
+                    //         }
+                    //     }
+                    // }
+
+                    // // If the accumulator is empty or the last field couldn't be parsed, add the inner_vec as is
+                    // if acc.is_empty() || acc.last().unwrap()[4] == inner_vec[4] {
+                    //     acc.push(inner_vec);
+                    // }
+
+                    // acc
+
+                    acc
+                });
         })
         .collect::<Vec<_>>();
 
     for record in relevant_records {
         println!();
-        println!("Record");
         println!("{:?}", record)
         // for column in record {
         //     println!("{:?}", column);
