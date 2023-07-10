@@ -9,5 +9,5 @@ edition = "2021"
 chrono = "0.4.26"
 clap = { version = "4.3.1", features = ["derive"] }
 csv = "1.2.2"
-humantime = "2.1.0"
 itertools = "0.10.5"
+rust_xlsxwriter = "0.41.0"
