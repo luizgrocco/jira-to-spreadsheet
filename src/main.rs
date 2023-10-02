@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         if tasks_summary_acc.is_empty() {
                             tasks_summary_acc = row_task;
                         } else {
-                            tasks_summary_acc = format!("{}\n{}", tasks_summary_acc, row_task);
+                            tasks_summary_acc = format!("{}\r{}", tasks_summary_acc, row_task);
                         }
                         hours_acc = hours_acc + row_hours;
 
@@ -159,9 +159,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // TODO: Last row with hour totals: worksheet.merge_range(1, 1, 1, 2, "Merged cells", &format)?;
 
+    let export_path = format!(
+        "{}/results.xlsx",
+        args.path.parent().unwrap().to_str().unwrap()
+    );
+
     worksheet
         .set_column_width(1, 100)
         .expect("failed setting column width");
-    workbook.save("text.xlsx").expect("failed to save file!");
+    workbook.save(export_path).expect("failed to save file!");
     Ok(())
 }
